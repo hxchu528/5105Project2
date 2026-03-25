@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package project2;
+
+message Context {
+  string doc_type = 1;
+  string doc_name = 2;
+  string doc_locator = 3;
+}
+
+message Record {
+  string id = 1;
+  string text = 2;
+  Context context = 3;
+  repeated float embedding = 4;
+}
+
+message Centroid {
+  repeated float values = 1;
+}
+
+message SearchHit {
+  string id = 1;
+  string text = 2;
+  Context context = 3;
+  float score = 4;
+}
+
+message NodeStats {
+  int32 vector_count = 1;
+  float mean_score = 2;
+  float stdv_score = 3;
+}
+
+message NodeInfo {
+  string target = 1;
+  NodeStats stats = 2;
+}
+
+service ControllerService {
+  rpc Put(PutRequest) returns (PutResponse);
+  rpc Search(SearchRequest) returns (SearchLocalResponse);
+  rpc ClusterStatus(ClusterStatusRequest) returns (ClusterStatusResponse);
+}
+
+service StorageNodeService {
+  rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse);
+  rpc SearchLocal(SearchLocalRequest) returns (SearchLocalResponse);
+  rpc ReplaceLocalPartition(ReplaceLocalPartitionRequest) returns (ReplaceLocalPartitionResponse);
+  rpc SplitPartition(SplitPartitionRequest) returns (SplitPartitionResponse);
+  rpc GetNodeStats(GetNodeStatsRequest) returns (NodeStats);
+}
+
+message PutRequest {
+  Record record = 1;
+}
+
+message PutResponse {
+  bool ok = 1;
+  string target = 2;
+  int32 target_count = 3;
+  bool split_triggered = 4;
+}
+
+message SearchRequest {
+  repeated float embedding = 1;
+}
+
+message ClusterStatusRequest {}
+
+message ClusterStatusResponse {
+  repeated NodeInfo nodes = 1;
+}
+
+message StoreRecordRequest {
+  Record record = 1;
+}
+
+message StoreRecordResponse {
+  bool ok = 1;
+  string target = 2;
+  Centroid centroid = 3;
+  int32 count = 4;
+}
+
+message SearchLocalRequest {
+  repeated float query_embedding = 1;
+  int32 top_k = 2;
+}
+
+message SearchLocalResponse {
+  repeated SearchHit hits = 1;
+  string target = 2;
+  int32 vectors_searched = 3;
+}
+
+message ReplaceLocalPartitionRequest {
+  repeated Record records = 1;
+  Centroid centroid = 2;
+}
+
+message ReplaceLocalPartitionResponse {
+  bool ok = 1;
+  string target = 2;
+  int32 count = 3;
+}
+
+message SplitPartitionRequest {
+  string new_node_target = 1;
+}
+
+message SplitPartitionResponse {
+  bool ok = 1;
+  string old_target = 2;
+  Centroid old_centroid = 3;
+  int32 old_count = 4;
+  string new_target = 5;
+  Centroid new_centroid = 6;
+  int32 new_count = 7;
+}
+
+message GetNodeStatsRequest { }
