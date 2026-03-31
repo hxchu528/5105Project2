@@ -86,13 +86,20 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                     self.next_node_num += 1
                     threading.Thread(target=self._run_split, args=(response.target, new_node_num)).start()
                 break
-
+        return PutResponse(
+            ok=response.ok,
+            target=response.target,
+            target_count=response.count,
+            split_triggered=response.count > MAX_VECTORS_PER_NODE and not self.repartitioning,
+        )
+    '''
         return PutResponse(
             ok=False,
             target="",
             target_count=0,
             split_triggered=False,
         )
+    '''
 
     def Search(
         self, request: SearchRequest, context: grpc.ServicerContext
