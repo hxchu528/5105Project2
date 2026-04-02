@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 
 CONTROLLER_HOST = os.environ.get("CONTROLLER_HOST", "host.docker.internal")
-CONTROLLER_PORT = os.environ.get("CONTROLLER_PORT", 50050)
+CONTROLLER_PORT = os.environ.get("CONTROLLER_PORT", 50050) #50050
 CONTROLLER_TARGET = f"{CONTROLLER_HOST}:{CONTROLLER_PORT}"
 
 WORKSPACE_FOLDER = os.environ.get("WORKSPACE_FOLDER", ".")

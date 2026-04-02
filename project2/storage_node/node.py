@@ -42,8 +42,10 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - count=len(self.records)
         #
         # Default placeholder return below lets the project run before you implement this.
+        #with self.cv:
         self.records.append(request.record)
         self.centroid = update_centroid(self.records)
+        #self.cv.notify_all()
         return StoreRecordResponse(
             ok=True,
             target=NODE_TARGET,
@@ -107,17 +109,30 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - new_count = len(move_records)
         #
         # Default placeholder return below lets the project run before you implement this.
-        temp = request.records
+        #temp = request.records
+        temp = list(self.records)
         keep_records, move_records, keep_centroid, move_centroid = kmeans_split(temp)
         with grpc.insecure_channel(request.new_node_target) as channel:
             stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
             stub.ReplaceLocalPartition(
                 ReplaceLocalPartitionRequest(
-                    records=move_records, centroid=Centroid(values=move_centroid)
+                    records=move_records,
+                    centroid=Centroid(values=move_centroid)
                 )
             )
+        #with self.cv:
         self.records = keep_records
         self.centroid = keep_centroid
+        return SplitPartitionResponse(
+            ok=True,
+            old_target=NODE_TARGET,
+            old_centroid=Centroid(values=keep_centroid),
+            old_count=len(keep_records),
+            new_target=request.new_node_target,
+            new_centroid=Centroid(values=move_centroid),
+            new_count=len(move_records),
+        )
+        '''
         return SplitPartitionResponse(
             ok=False,
             old_target=NODE_TARGET,
@@ -127,7 +142,7 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
             new_centroid=Centroid(values=[]),
             new_count=0,
         )
-
+        '''
     def GetNodeStats(
         self, request: GetNodeStatsRequest, context: grpc.ServicerContext
     ) -> NodeStats:

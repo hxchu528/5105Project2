@@ -72,15 +72,17 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
         #   response.count
         #
         # Default placeholder return below lets the project run before you implement this.
-        #choose_closest_node(self.nodes, list(request.record.embedding))
-        with grpc.insecure_channel(choose_closest_node(self.nodes, list(request.record.embedding))) as channel:
+        
+        chosen_node = choose_closest_node(self.nodes, list(request.record.embedding))
+        with grpc.insecure_channel(chosen_node["target"]) as channel:
             stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
             response = stub.StoreRecord(StoreRecordRequest(record=request.record))
         self.total_vectors += 1
+        should_split = response.count > MAX_VECTORS_PER_NODE and not self.repartitioning
         for node in self.nodes:
             if node["target"] == response.target:
                 node["centroid"] = list(response.centroid.values)
-                if response.count > MAX_VECTORS_PER_NODE and not self.repartitioning:
+                if should_split:
                     self.repartitioning = True
                     new_node_num = self.next_node_num
                     self.next_node_num += 1
@@ -90,7 +92,7 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
             ok=response.ok,
             target=response.target,
             target_count=response.count,
-            split_triggered=response.count > MAX_VECTORS_PER_NODE and not self.repartitioning,
+            split_triggered=should_split,
         )
     '''
         return PutResponse(
@@ -124,7 +126,7 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
         #
         # Default placeholder return below lets the project run before you implement this.
         query_embedding = list(request.embedding)
-        with grpc.insecure_channel(choose_closest_node(self.nodes, query_embedding)) as channel:
+        with grpc.insecure_channel(choose_closest_node(self.nodes, query_embedding)['target']) as channel:
             stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
             response = stub.SearchLocal(
                 SearchLocalRequest(query_embedding=query_embedding, top_k=5)
