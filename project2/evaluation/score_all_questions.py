@@ -161,9 +161,52 @@ def print_summary(results: list[dict], total_vectors: int) -> None:
     print("=" * 80)
 
 
+WORKSPACE_FOLDER = os.environ.get("WORKSPACE_FOLDER", ".")
+CORPUS_FOLDER = Path(WORKSPACE_FOLDER, "corpus")
+def put_full_corpus_source_type():
+    """TODO: Implement this function... recommended to Put one at at time with full corups to avoid reading whole file"""
+
+    course_papers_path = Path(CORPUS_FOLDER, "course_papers")
+    lecture_slides_path = Path(CORPUS_FOLDER, "lecture_slides")
+    lecture_transcripts_path = Path(CORPUS_FOLDER, "lecture_transcripts")
+    textbook_path = Path(CORPUS_FOLDER, "textbook")
+
+    all_files = (
+    sorted(course_papers_path.glob("*")) +
+    sorted(lecture_slides_path.glob("*")) +
+    sorted(lecture_transcripts_path.glob("*")) +
+    sorted(textbook_path.glob("*")))
+    print(all_files)
+
+    with grpc.insecure_channel(CONTROLLER_TARGET) as channel:
+
+        # Create stub
+        stub = project2_pb2_grpc.ControllerServiceStub(channel)
+
+        count = 0
+        for file in all_files:
+            with open(file, "r") as f:
+                for line in f:
+                    # if count > 150:
+                    #     break
+
+                    record = corpus_line_to_record(line)
+                    response: PutResponse = stub.Put(PutRequest(record=record))
+
+                    print(
+                        f"put {count}: target={response.target} "
+                        f"count={response.target_count} split_triggered={response.split_triggered}"
+                    )
+                    
+                    count += 1
+
+        return count
+
+
 def main() -> None:
     print("Step 1: ingesting full corpus")
     total_vectors: int = ingest_full_corpus(CORPUS_FILE)
+    # total_vectors: int = put_full_corpus_source_type()
 
     print("\nStep 2: loading all scored questions")
     questions: list[dict] = load_questions(QUESTIONS_FILE)

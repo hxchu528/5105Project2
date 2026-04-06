@@ -5,7 +5,7 @@ import warnings
 
 import project2_pb2 as project2__pb2
 
-GRPC_GENERATED_VERSION = '1.78.0'
+GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -217,6 +217,11 @@ class StorageNodeServiceStub(object):
                 request_serializer=project2__pb2.GetNodeStatsRequest.SerializeToString,
                 response_deserializer=project2__pb2.NodeStats.FromString,
                 _registered_method=True)
+        self.GetRecords = channel.unary_unary(
+                '/project2.StorageNodeService/GetRecords',
+                request_serializer=project2__pb2.GetRecordsRequest.SerializeToString,
+                response_deserializer=project2__pb2.GetRecordsResponse.FromString,
+                _registered_method=True)
 
 
 class StorageNodeServiceServicer(object):
@@ -252,6 +257,12 @@ class StorageNodeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetRecords(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_StorageNodeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -279,6 +290,11 @@ def add_StorageNodeServiceServicer_to_server(servicer, server):
                     servicer.GetNodeStats,
                     request_deserializer=project2__pb2.GetNodeStatsRequest.FromString,
                     response_serializer=project2__pb2.NodeStats.SerializeToString,
+            ),
+            'GetRecords': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetRecords,
+                    request_deserializer=project2__pb2.GetRecordsRequest.FromString,
+                    response_serializer=project2__pb2.GetRecordsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -416,6 +432,33 @@ class StorageNodeService(object):
             '/project2.StorageNodeService/GetNodeStats',
             project2__pb2.GetNodeStatsRequest.SerializeToString,
             project2__pb2.NodeStats.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetRecords(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/project2.StorageNodeService/GetRecords',
+            project2__pb2.GetRecordsRequest.SerializeToString,
+            project2__pb2.GetRecordsResponse.FromString,
             options,
             channel_credentials,
             insecure,

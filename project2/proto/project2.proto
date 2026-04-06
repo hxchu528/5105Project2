@@ -49,6 +49,7 @@ service StorageNodeService {
   rpc ReplaceLocalPartition(ReplaceLocalPartitionRequest) returns (ReplaceLocalPartitionResponse);
   rpc SplitPartition(SplitPartitionRequest) returns (SplitPartitionResponse);
   rpc GetNodeStats(GetNodeStatsRequest) returns (NodeStats);
+  rpc GetRecords(GetRecordsRequest) returns (GetRecordsResponse);
 }
 
 message PutRequest {
@@ -61,6 +62,15 @@ message PutResponse {
   int32 target_count = 3;
   bool split_triggered = 4;
 }
+
+//New for recluster
+//======================
+message GetRecordsRequest{ }
+
+message GetRecordsResponse{
+  repeated Record records = 1;
+}
+//======================
 
 message SearchRequest {
   repeated float embedding = 1;

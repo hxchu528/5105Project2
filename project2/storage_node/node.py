@@ -25,6 +25,13 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
             while self.repartitioning:
                 self.cv.wait()
 
+    #New for recluster
+    def GetRecords(self, request: GetRecordsRequest, context: grpc.ServicerContext):
+        return GetRecordsResponse(
+            records=self.records
+        )
+    
+
     def StoreRecord(
         self, request: StoreRecordRequest, context: grpc.ServicerContext
     ) -> StoreRecordResponse:

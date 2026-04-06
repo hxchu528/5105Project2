@@ -29,6 +29,6 @@
   },
   "containerEnv": {
     "PYTHONPATH": "$PYTHONPATH:${containerWorkspaceFolder}:${containerWorkspaceFolder}/proto/src",
-    "CONTROLLER_TARGET" : "host.docker.internal:50050"
+    "CONTROLLER_TARGET" : "172.18.0.1:50050"
   }
 }

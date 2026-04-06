@@ -82,6 +82,16 @@ class PutResponse(_message.Message):
     split_triggered: bool
     def __init__(self, ok: bool = ..., target: _Optional[str] = ..., target_count: _Optional[int] = ..., split_triggered: bool = ...) -> None: ...
 
+class GetRecordsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GetRecordsResponse(_message.Message):
+    __slots__ = ("records",)
+    RECORDS_FIELD_NUMBER: _ClassVar[int]
+    records: _containers.RepeatedCompositeFieldContainer[Record]
+    def __init__(self, records: _Optional[_Iterable[_Union[Record, _Mapping]]] = ...) -> None: ...
+
 class SearchRequest(_message.Message):
     __slots__ = ("embedding",)
     EMBEDDING_FIELD_NUMBER: _ClassVar[int]

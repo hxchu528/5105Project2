@@ -87,6 +87,83 @@ def kmeans_split(
     centroid2 = update_centroid(cluster2)
     return cluster1, cluster2, centroid1, centroid2
 
+#New for reclustering
+def k_kmeans_split(
+    records: list[Record], cluster_count: int, max_iters: int = 6
+) -> tuple[list[list[Record]], list[list[float]]]:
+    
+    if len(records) < cluster_count:
+        centroid = update_centroid(records)
+        return [records], [centroid]
+
+    embeddings: list[np.ndarray] = [np.array(list(record.embedding), dtype=float) for record in records]
+
+    #evenly spaced indices
+    clusters_indices = np.linspace(0, len(records)-1, cluster_count, dtype=int)
+    centroids = [embeddings[0].copy()]
+    for _ in range(cluster_count - 1):
+        distances = [
+            min(1.0 - cosine_similarity(e.tolist(), c.tolist()) for c in centroids)
+            for e in embeddings
+        ]
+        centroids.append(embeddings[int(np.argmax(distances))].copy())
+
+    # c1: np.ndarray = embeddings[0].copy()
+    # c2: np.ndarray = embeddings[-1].copy()
+
+    clusters = []
+    for i in range(cluster_count):
+        clusters.append([])
+    # cluster1: list[Record] = []
+    # cluster2: list[Record] = []
+
+    for _ in range(max_iters):
+        # cluster1 = []
+        # cluster2 = []
+        clusters = []
+        for i in range(cluster_count):
+            clusters.append([])
+
+        for record, embedding in zip(records, embeddings):
+            similarities = [
+                cosine_similarity(embedding.tolist(), c.tolist()) 
+                for c in centroids
+            ]
+            closest = similarities.index(max(similarities))
+            clusters[closest].append(record)
+            # if cosine_similarity(embedding.tolist(), c1.tolist()) >= cosine_similarity(
+            #     embedding.tolist(), c2.tolist()
+            # ):
+            #     cluster1.append(record)
+            # else:
+            #     cluster2.append(record)
+
+
+        for i, cluster in enumerate(clusters):
+            if not cluster:
+                largest = max(range(cluster_count), key=lambda x: len(clusters[x]))
+                mid = len(clusters[largest]) // 2
+                clusters[i] = clusters[largest][mid:]
+                clusters[largest] = clusters[largest][:mid]
+
+        # if not cluster1 or not cluster2:
+        #     midpoint = len(records) // 2
+        #     cluster1 = records[:midpoint]
+        #     cluster2 = records[midpoint:]
+        #     break
+
+        for i in range(len(centroids)):
+            centroids[i] = np.mean([list(record.embedding) for record in clusters[i]], axis=0)
+        # c1 = np.mean([list(record.embedding) for record in cluster1], axis=0)
+        # c2 = np.mean([list(record.embedding) for record in cluster2], axis=0)
+
+
+    centroid_list = []
+    for i in range(len(clusters)):
+        centroid_list.append(update_centroid(clusters[i]))
+
+    return clusters, centroid_list
+
 
 def corpus_line_to_record(jsonl_line: str) -> Record:
     obj: dict = json.loads(jsonl_line)

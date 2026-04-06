@@ -9,6 +9,7 @@ import project2_pb2
 import project2_pb2_grpc
 
 CONTROLLER_TARGET = os.environ.get("CONTROLLER_TARGET", "host.docker.internal:50050")
+# CONTROLLER_TARGET = f"172.18.0.1:50050"
 
 def print_cluster_status(resp : project2_pb2.ClusterStatusResponse):
 

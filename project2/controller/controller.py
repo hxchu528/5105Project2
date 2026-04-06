@@ -5,7 +5,7 @@ import grpc
 from project2_pb2 import *
 import project2_pb2_grpc
 from utils.config import CONTROLLER_PORT, NODE_PORT
-from utils.utils import choose_closest_node, create_storage_node
+from utils.utils import choose_closest_node, create_storage_node, k_kmeans_split
 
 
 MAX_VECTORS_PER_NODE = 1000
@@ -47,6 +47,28 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
             )
         finally:
             self.repartitioning = False
+    
+    def _recluster(self):
+        try:
+            records = []
+            for node in self.nodes:
+                with grpc.insecure_channel(str(node["target"])) as channel:
+                    stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+                    records += stub.GetRecords(GetRecordsRequest()).records
+
+
+            partitions, centroids = k_kmeans_split(records, cluster_count=len(self.nodes), max_iters=100)
+
+            for node, partition, centroid in zip(self.nodes, partitions, centroids):
+                with grpc.insecure_channel(node["target"]) as channel:
+                    stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+                    stub.ReplaceLocalPartition(ReplaceLocalPartitionRequest(
+                        records=partition,
+                        centroid=Centroid(values=centroid)
+                    ))
+                node["centroid"] = centroid
+        finally:
+            self.repartitioning = False
 
     def Put(self, request: PutRequest, context: grpc.ServicerContext) -> PutResponse:
         # TODO:
@@ -73,6 +95,8 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
         #
         # Default placeholder return below lets the project run before you implement this.
         
+        # while self.repartitioning:
+        #     continue
         chosen_node = choose_closest_node(self.nodes, list(request.record.embedding))
         with grpc.insecure_channel(chosen_node["target"]) as channel:
             stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
@@ -88,6 +112,9 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                     self.next_node_num += 1
                     threading.Thread(target=self._run_split, args=(response.target, new_node_num)).start()
                 break
+        # if self.total_vectors % ((MAX_VECTORS_PER_NODE + 1) * 2) == 0 and self.total_vectors != 0 and not self.repartitioning:
+        #     self.repartitioning = True
+        #     threading.Thread(target=self._recluster).start()
         return PutResponse(
             ok=response.ok,
             target=response.target,
