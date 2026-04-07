@@ -13,6 +13,7 @@ MAX_VECTORS_PER_NODE = 1000
 
 class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
     def __init__(self) -> None:
+        self.reclustering: bool = False
         self.repartitioning: bool = False
         self.next_node_num: int = 2
         self.total_vectors: int = 0
@@ -68,7 +69,7 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                     ))
                 node["centroid"] = centroid
         finally:
-            self.repartitioning = False
+            self.reclustering = False
 
     def Put(self, request: PutRequest, context: grpc.ServicerContext) -> PutResponse:
         # TODO:
@@ -94,9 +95,15 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
         #   response.count
         #
         # Default placeholder return below lets the project run before you implement this.
+
+        #MITCH FOR GRADING
+        #=======================
+        periodicRecluster = True
+        #=======================
         
-        # while self.repartitioning:
-        #     continue
+        #Added for reclustering
+        while self.reclustering:
+            continue
         chosen_node = choose_closest_node(self.nodes, list(request.record.embedding))
         with grpc.insecure_channel(chosen_node["target"]) as channel:
             stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
@@ -112,9 +119,13 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                     self.next_node_num += 1
                     threading.Thread(target=self._run_split, args=(response.target, new_node_num)).start()
                 break
-        # if self.total_vectors % ((MAX_VECTORS_PER_NODE + 1) * 2) == 0 and self.total_vectors != 0 and not self.repartitioning:
-        #     self.repartitioning = True
-        #     threading.Thread(target=self._recluster).start()
+
+        #Added for reclustering
+        if periodicRecluster:
+            if self.total_vectors % ((MAX_VECTORS_PER_NODE + 1) * 2) == 0 and self.total_vectors != 0 and not self.repartitioning:
+                self.reclustering = True
+                threading.Thread(target=self._recluster).start()
+
         return PutResponse(
             ok=response.ok,
             target=response.target,
